@@ -2,8 +2,13 @@
 # for permanent configurations
 import numpy as np
 from scipy import optimize
+import os
+import inspect
 
-data_path = r'../data'
+directory = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])) # get script's path
+#data_path = r'../data'
+data_path = os.path.join(directory, r'../data')
+#csv_path = r'KH_xi=2__sa.csv'
 csv_path = r'KH_xi=2__sa.csv'
 
 class thet_arrays():
