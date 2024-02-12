@@ -6,21 +6,16 @@ from scipy import optimize
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+import pickle
 
 from stat_functions import get_opp_log_vr_probit
 
 ##
 #
-class Reference_curve() :
-    """Reference_curve class
-    gather 'reference' items for comparison, computed with the consideration of all the available data"""
+class Ref_main():
     def __init__(self, data) :
         """data = data object containing the dataset"""
         self.data = data
-        opp_log_vraiss = get_opp_log_vr_probit(data.Z, data.A)
-        self.theta_MLE = None
-        self.curve_MLE = None
-        self._compute_MLE_curve()
         self.reglin = LinearRegression().fit(np.log(data.A), np.log(data.Y))
         self.curve_MC = None
         self.curve_MC_var = None
@@ -28,25 +23,6 @@ class Reference_curve() :
         self._compute_empirical_curves()
 
     def _compute_empirical_curves(self, Nc=35) :
-        """compute empirically some fragility curves via MCMC and clustering"""
-        # # below is depreciated
-        # num_a = len(self.data.a_tab)
-        # F_tab = np.zeros(num_a)
-        # FF_tab = np.zeros(num_a)
-        # for i,a in enumerate(self.data.a_tab[:-1]) :
-        #     A_in_id = (self.data.A>=a)*(self.data.A<self.data.a_tab[i+1])
-        #     fm = self.data.Z[A_in_id]
-        #     FF_tab[i:] += fm.sum()
-        #     if len(fm)==0 :
-        #         F_tab[i] = 0
-        #     else :
-        #         F_tab[i] = fm.mean()
-        # FF_tab /= self.data.Z.shape[0]
-        # F_tab[-1] = 1
-        # F_tab_lis = F_tab * np.exp(-(self.data.a_tab[np.newaxis]-self.data.a_tab[...,np.newaxis])**2/(2*self.data.h_a**2)).sum(axis=0)
-        # F_tab_lis = F_tab_lis / F_tab_lis.max()
-        # self.curve_MC, self.curve_MC_lis = F_tab, F_tab_lis
-        # return F_tab, F_tab_lis
         kmeans_IM = KMeans(n_clusters=Nc).fit(self.data.A)
         a_m_tab = kmeans_IM.cluster_centers_.flatten()
         pMC = np.zeros_like(a_m_tab)
@@ -63,12 +39,27 @@ class Reference_curve() :
         return kmeans_IM
 
 
-    def _compute_MLE_curve(self, opp_log_vraiss=None) :
+class Reference_curve(Ref_main) :
+    """Reference_curve class
+    gather 'reference' items for comparison, computed with the consideration of all the available data"""
+    def __init__(self, data) :
+        """data = data object containing the dataset"""
+        super().__init__(data)
+        self.theta_MLE = None
+        self.curve_MLE = None
+        self.curve_MC_data_tabs = None
+        self._compute_MLE_curve()
+
+    def _compute_MLE(self, opp_log_vraiss=None) :
         if opp_log_vraiss is None :
             opp_log_vraiss = get_opp_log_vr_probit(self.data.Z, self.data.A)
         self.theta_MLE = optimize.minimize(opp_log_vraiss, np.array([3,0.3]), options={'maxiter':50}).x
-        self.curve_MLE = 1/2 + 1/2 * erf(np.log(self.data.a_tab/self.theta_MLE[0])/self.theta_MLE[1])
         return self.theta_MLE
+
+    def _compute_MLE_curve(self) :
+        if self.theta_MLE is None :
+            self._compute_MLE()
+        self.curve_MLE = 1/2 + 1/2 * erf(np.log(self.data.a_tab/self.theta_MLE[0])/self.theta_MLE[1])
 
     def plot_ref_fig(self, ax=None, num_points=500) :
         """plot the reference fragility curves
@@ -91,6 +82,32 @@ class Reference_curve() :
         ax.set_ylim((-0.01, 1.01))
         return ax
 
+    def _compute_MC_data_tab(self) :
+        if self.curve_MC is None :
+            self._compute_empirical_curves()
+        c_tab = np.zeros_like(self.data.a_tab)
+        s_tab = np.zeros_like(self.data.a_tab)
+        for i,a in enumerate(self.data.a_tab) :
+            if a <= self.a_tab_MC[0] :
+                c_tab[i] = a* self.curve_MC[0]/self.a_tab_MC[0]
+                # s_tab[i] =
+            elif a>self.a_tab_MC[-1] :
+                c_tab[i] = (a-self.a_tab_MC[-1])*(1-self.curve_MC[-1])/(self.data.a_tab.max()-self.a_tab_MC[-1]) + self.curve_MC[-1]
+            else :
+                i_mc = (self.a_tab_MC<=a).sum() -1
+                c_tab[i] = (a-self.a_tab_MC[i_mc]) * (self.curve_MC[i_mc+1]-self.curve_MC[i_mc])/ (self.a_tab_MC[i_mc+1]-self.a_tab_MC[i_mc]) + self.curve_MC[i_mc]
+        self.curve_MC_data_tabs = [c_tab, s_tab]
+        return self.curve_MC_data_tabs
+
+
+
+class Reference_saved_MLE(Reference_curve) :
+    def __init__(self, data, path_MLE):
+        self.path_MLE = path_MLE
+        super().__init__(data)
+
+    def _compute_MLE(self):
+        self.theta_MLE = pickle.load(open(self.path_MLE, 'rb'))
 
 
 
@@ -98,10 +115,17 @@ if __name__=="__main__":
     from data import Data
     plt.ion()
     plt.show()
-    IM = 'PGA'
-    dat = Data(IM)
+    IM = 'sa_5hz'
+    # dat = Data(IM)
+    # dat = Data('PGA', csv_path='Res_ASG.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
+    # dat = Data(IM, csv_path='Res_ASG_Lin.csv', quantile_C=0.9, name_inte='rot')
+    dat = Data(IM, csv_path='Res_ASG_SA_PGA_RL_RNL.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
     ref = Reference_curve(dat)
     ref.plot_ref_fig()
+
+    # from config import data_path
+    # import os
+    # pickle.dump(ref.theta_MLE, open(os.path.join(data_path, 'ref_MLE_ASG_lin_{}'.format(IM)), 'wb'))
 
 
 
