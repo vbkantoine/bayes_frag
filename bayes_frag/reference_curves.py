@@ -31,7 +31,7 @@ class Ref_main():
         for i in range(Nc) :
             z_ci = self.data.Z[kmeans_IM.labels_==i]
             pMC[i] = np.mean(z_ci)
-            sMC[i] = np.sqrt(pMC[i]*(1-pMC[i])/z_ci.shape[0])*1.96 #re-think the 1.96 constant w.r.t a desired alpha-confidence
+            sMC[i] = np.sqrt(pMC[i]*(1-pMC[i])/z_ci.shape[0])*1.96 #todo: re-think the 1.96 constant w.r.t a desired alpha-confidence
         id_sort = np.argsort(a_m_tab)
         self.a_tab_MC = a_m_tab[id_sort]
         self.curve_MC = pMC[id_sort]
@@ -86,16 +86,29 @@ class Reference_curve(Ref_main) :
         if self.curve_MC is None :
             self._compute_empirical_curves()
         c_tab = np.zeros_like(self.data.a_tab)
-        s_tab = np.zeros_like(self.data.a_tab)
+        s_tab = np.zeros((self.data.a_tab.shape[0],2))
         for i,a in enumerate(self.data.a_tab) :
             if a <= self.a_tab_MC[0] :
                 c_tab[i] = a* self.curve_MC[0]/self.a_tab_MC[0]
-                # s_tab[i] =
+                smc_inf_0, smc_inf_1 = 0, self.curve_MC[0]-self.curve_MC_var[0]
+                smc_max_0, smc_max_1 = 0, self.curve_MC[0]+self.curve_MC_var[0]
+                amc_0 = 0
+                amc_1 = self.a_tab_MC[0]
             elif a>self.a_tab_MC[-1] :
                 c_tab[i] = (a-self.a_tab_MC[-1])*(1-self.curve_MC[-1])/(self.data.a_tab.max()-self.a_tab_MC[-1]) + self.curve_MC[-1]
+                smc_inf_0, smc_inf_1 = self.curve_MC[-1]-self.curve_MC_var[-1], 1
+                smc_max_0, smc_max_1 = self.curve_MC[-1]+self.curve_MC_var[-1], 1
+                amc_0 = self.a_tab_MC[-1]
+                amc_1 = self.data.a_tab.max()
             else :
                 i_mc = (self.a_tab_MC<=a).sum() -1
                 c_tab[i] = (a-self.a_tab_MC[i_mc]) * (self.curve_MC[i_mc+1]-self.curve_MC[i_mc])/ (self.a_tab_MC[i_mc+1]-self.a_tab_MC[i_mc]) + self.curve_MC[i_mc]
+                smc_inf_0, smc_inf_1 = self.curve_MC[i_mc]-self.curve_MC_var[i_mc], self.curve_MC[i_mc+1]-self.curve_MC_var[i_mc+1]
+                smc_max_0, smc_max_1 = self.curve_MC[i_mc]+self.curve_MC_var[i_mc], self.curve_MC[i_mc+1]+self.curve_MC_var[i_mc+1]
+                amc_0 = self.a_tab_MC[i_mc]
+                amc_1 = self.a_tab_MC[i_mc+1]
+            s_tab[i,0] = np.maximum((a-amc_0) * (smc_inf_1-smc_inf_0 ) / (amc_1-amc_0 ) + smc_inf_0, 0)
+            s_tab[i,1] = np.minimum((a-amc_0) * (smc_max_1-smc_max_0 ) / (amc_1-amc_0 ) + smc_max_0, 1)
         self.curve_MC_data_tabs = [c_tab, s_tab]
         return self.curve_MC_data_tabs
 
