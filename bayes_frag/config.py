@@ -12,6 +12,8 @@ data_path = os.path.join(directory, r'../data')
 csv_path = r'KH_xi=2__sa.csv'
 
 class thet_arrays():
+    """a class to store a mesh of the domain of theta for the computation of a Fisher information matrix
+    """
     def __init__(self, alpha_min, alpha_max, beta_min, beta_max, num_a, num_b) :
         self.alpha_min = alpha_min
         self.alpha_max = alpha_max

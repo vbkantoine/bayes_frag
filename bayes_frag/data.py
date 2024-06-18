@@ -13,12 +13,35 @@ def get_data(path, csv_path) :
     return pd.read_csv(os.path.join(path,csv_path))
 
 class Data() :
-    """"Data class. Contains full dataset and drawn methods for it"""
+    """"
+    Data class. Contains full dataset and drawn methods for it.
+    
+    Attributes: 
+        df: the full input data from a csv file.
+        shuffle_ids: permutation of the indices from the raw data and the stored data.
+        IM: name of the considered IM.
+        A: stored IMs from the data.
+        Y: stored responses from the data.
+        C: threshold to characterize a failure.
+        Z: stored failures from the data.
+        increasing_mode: if True, default drawn from the dataset will not be random.
+        a_tab, h_a, f_A: serve the computation of an approximated density of the IM.
+    """
     def __init__(self, IM, shuffle=False, full_size=None, quantile_C=None, C=None, path=data_path, csv_path=csv_path, name_inte='z_max') :
-        """IM = IM name to get characteristic from config
-            shuffle=True if the dataset must be shuffled
-            full_size #Not used
-            path = data_path
+        """
+        Extract data from a CSV file with a column [IM] and a column of responses [name_inte] at least.
+        A threshold C serves the computation of a failures array: failure==(data[name_inte]>C).
+
+        Args:
+            IM (string): IM name to get characteristic from config
+            shuffle (bool, optional): True if the dataset must be shuffled at initialization. Defaults to False.
+            full_size (_type_, optional): not used. Defaults to None.
+            quantile_C (float, optional): if not None, C will be set such that (100*(1-quantile_C))% of data result into a failure. Defaults to None.
+            C (float, optional): to set manually a threshold value to define failures/non-failures. Ignored if quantile_C is not None. Defaults to None.
+                If quantile_C==C==None, C is taken from config.
+            path (string, optional): path to the data folder. Defaults to data_path.
+            csv_path (string, optional): path to the csv file from data_path. Defaults to csv_path.
+            name_inte (string, optional): column name of the structure's rsponse. Defaults to 'z_max'.
         """
         self.df = get_data(path, csv_path)
         self.shuffle_ids = self._shufflize(shuffle)
