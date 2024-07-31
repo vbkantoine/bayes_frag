@@ -296,6 +296,38 @@ def HM_k_log_norm(z0, pi, k, max_iter=5000, sigma_prop=10**-2) :
 def HM_Fisher() :
     return True
 
+def adaptative_HM_nonumb(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05, step=500, d=2) :
+    # d = 2
+    z_v = z0.reshape(1,d)
+    z_tot = np.zeros((max_iter,d))
+    # u = len(np.asarray(sigma0).shape)
+    alpha_tab = np.zeros((max_iter,1))
+    # if u==0 :
+    # sig = sigma0*np.eye(d)
+    # else :
+    sig = sigma0+0
+    sig_emp = sig+0
+    for n in range(max_iter) :
+        pi_zv = pi(z_v)
+        z = np.zeros_like(z_v)
+        if n>=step :
+            z[0] = z_v[0] + (1-b)*2.38*sig_emp@rd.randn(d)/np.sqrt(d) + b* sig@rd.randn(d)/np.sqrt(d)
+        else :
+            z[0] = z_v[0] + sig@rd.randn(d)/np.sqrt(d)
+        pi_z = pi(z)
+        if pi_log :
+            log_alpha = pi_z - pi_zv
+        else :
+            log_alpha = np.log(pi_z)-np.log(pi_zv)
+        rand = np.log(rd.rand())<log_alpha
+        alpha_tab[n] = np.exp(log_alpha)
+        z_v += rand*(z-z_v)
+        z_tot[n] = z_v[0] + 0
+        if n>=step :
+            tocov = np.transpose(z_tot[:n+1])
+            sig_emp = cholesky(np.cov(tocov)+10**-6*np.eye(d))
+    return z_v, z_tot, alpha_tab.flatten()
+
 
 
 

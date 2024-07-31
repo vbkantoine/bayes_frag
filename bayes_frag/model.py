@@ -11,7 +11,7 @@ from reference_curves import Reference_curve
 
 
 def probit_fargility_curve(a, theta) :
-    return 1/2+1/2*spc.erf(np.log(a[np.newaxis]/theta[:,0,np.newaxis])/theta[:,1,np.newaxis]/np.sqrt(2))
+    return 1/2+1/2*spc.erf(np.log(a[np.newaxis]/theta[:,0,np.newaxis])/theta[:,1,np.newaxis])
 
 
 class Model() :
