@@ -1,4 +1,4 @@
-# Objective_priors
+# Objective priors for Seismic fragility curves
 Objective priors construction for bayesian estimation of seismic fragility curves
 Define Bayesian model for seismic fragility curves, compute Jeffreys prior, run simulations.
 
