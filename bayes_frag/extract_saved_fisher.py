@@ -94,9 +94,12 @@ class Approx_fisher() :
 
 if __name__=="__main__":
     IM = 'PGA'
-    fisher_file = os.path.join(data_path, 'Fisher_array_{}'.format(IM))
-    
-    save_fisher_arr = IM_dict[IM]['save_fisher_arr']
+    fisher_file = os.path.join(data_path, 'Fisher_array_{}2'.format(IM))
+
+    from config import thet_arrays
+    dict_save_fisher = {'C': 0.8*10**-2, 'save_fisher_arr': thet_arrays(10**-5, 10, 10**-3, 2, 2000, 2000), 'save_fisher_path':'Fisher_array_PGA2'}
+    # save_fisher_arr = IM_dict[IM]['save_fisher_arr']
+    save_fisher_arr = dict_save_fisher['save_fisher_arr']
     fisher = Approx_fisher(fisher_file, save_fisher_arr)
 
     plt.ion()
@@ -117,7 +120,7 @@ if __name__=="__main__":
         th = np.concatenate((alpha*np.ones((num_theta,1)),theta_tab[:,1].reshape(num_theta,1)), axis=1)
         II[i,:] = fisher.fisher_approx(th)
         # JJ[i,:] = jeffrey_approx(th)
-    JJ = np.abs(II[:,:,0,0]*II[:,:,1,1] - II[:,:,0,1]**2)**0.5
+    JJ = np.nan_to_num(np.abs(np.nan_to_num(II[:,:,0,0]*II[:,:,1,1] - II[:,:,0,1]**2)**0.5))
 
     # following: in a function in an other script
     plt.figure()

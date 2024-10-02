@@ -15,8 +15,8 @@ def get_data(path, csv_path) :
 class Data() :
     """"
     Data class. Contains full dataset and drawn methods for it.
-    
-    Attributes: 
+
+    Attributes:
         df: the full input data from a csv file.
         shuffle_ids: permutation of the indices from the raw data and the stored data.
         IM: name of the considered IM.
