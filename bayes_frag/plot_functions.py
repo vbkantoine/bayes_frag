@@ -15,8 +15,8 @@ plt.ion()
 plt.show()
 
 def plot_bi_function(pp, theta_grid1, theta_grid2, ax=None) :
-    j_min, j_max = 0, np.max(pp)
-    levels = np.linspace(j_min, j_max, 15)
+    j_min, j_max = np.min(pp), np.max(pp)
+    levels = np.linspace(j_min, j_max, 20)
 
     if ax is None :
         fig = plt.figure(figsize=(4.5, 2.5))

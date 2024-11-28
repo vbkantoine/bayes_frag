@@ -59,13 +59,13 @@ class HM_Estimator() :
             axes.append(fig.add_subplot(131))
             axes.append(fig.add_subplot(132))
             axes.append(fig.add_subplot(133))
-        axes[0].plot(kept_plot_ids, evol_acc[kept_plot_ids])
+        axes[0].plot(kept_plot_ids, evol_acc)
         axes[0].set_ylim(0,1)
-        axes[1].plot(kept_plot_ids, alpha_evol[kept_plot_ids], label=r'$\alpha$')
-        axes[1].plot(kept_plot_ids, alpha_mean[kept_plot_ids], label=r'$\mathbb{E}\alpha$')
+        axes[1].plot(kept_plot_ids, alpha_evol, label=r'$\alpha$')
+        axes[1].plot(kept_plot_ids, alpha_mean, label=r'$\mathbb{E}\alpha$')
         axes[1].legend()
-        axes[2].plot(kept_plot_ids, beta_evol[kept_plot_ids], label=r'$\beta$')
-        axes[2].plot(kept_plot_ids, beta_mean[kept_plot_ids], label=r'$\mathbb{E}\beta$')
+        axes[2].plot(kept_plot_ids, beta_evol, label=r'$\beta$')
+        axes[2].plot(kept_plot_ids, beta_mean, label=r'$\mathbb{E}\beta$')
         axes[2].legend()
         return axes
 
@@ -231,6 +231,41 @@ def adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0
     return z_v, z_tot, alpha_tab.flatten()
 
 @jit(nopython=True)
+def adapt_rate_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=np.array([0.1]), target_accept=0.4, batch_size=50) :
+    d = z0.shape[0]
+    z_tot = np.zeros((max_iter,2))
+    z_v = z0.reshape(1,d)
+    alpha_tab = np.zeros((max_iter,1))
+    sig = sigma0+0
+    # # l_sig = sigma0*np.eye(d)
+    j = 0
+    accept = np.zeros(1)
+    matr = cholesky(0.5*np.eye(d)+0.5*np.ones((d,d)))
+    for n in range(max_iter):
+        pi_zv = pi(z_v)
+        z = np.zeros_like(z_v)
+        z[0] = z_v[0] + sig*matr@rd.randn(d)
+        pi_z = pi(z)
+        if pi_log :
+            log_alpha = pi_z - pi_zv
+        else :
+            log_alpha = np.log(pi_z)-np.log(pi_zv)
+        rand = np.log(rd.rand())<log_alpha
+        alpha_tab[n] = np.exp(log_alpha)
+        z_v += rand*(z-z_v)
+        accept = accept+rand 
+        z_tot[n] = z_v[0] + 0
+        if (n+1)%batch_size==0 :
+            j = j+1
+            delta_j = min(0.01, j**-0.5)
+            sig = sig * np.exp( np.sign( accept/batch_size - target_accept)*delta_j/2) 
+            # l_sig = sig*np.eye(d)
+            # batch_acc.append(accept/batch_size)
+            accept = np.zeros(1)
+    return z_v, z_tot, alpha_tab.flatten()
+
+
+@jit(nopython=True)
 def log_adaptative_HM(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1*np.eye(2), b=0.05, step=500) : # to simulate log(alpha), log(beta) instead of alpha, beta
     z_v, z_tot, alpha_tab = adaptative_HM(z0, pi, pi_log, max_iter, sigma0, b, step)
     return np.exp(z_v), np.exp(z_tot), alpha_tab
@@ -269,6 +304,9 @@ def adaptative_HM_1d(z0, pi, pi_log=False, max_iter=5000, sigma0=0.1, b=0.05, st
             # sig_emp = cholesky(np.cov(tocov)+10**-10*np.eye(d))
             sig_emp = np.sqrt(z_tot[:n+1].var())
     return z_v, z_tot[:,0], alpha_tab[:,0]
+
+
+
 
 
 

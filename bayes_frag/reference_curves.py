@@ -126,14 +126,17 @@ class Reference_saved_MLE(Reference_curve) :
 
 if __name__=="__main__":
     from data import Data
+    import os
+    import config
     plt.ion()
     plt.show()
-    IM = 'sa_5hz'
+    IM = 'PGA'
     # dat = Data(IM)
     # dat = Data('PGA', csv_path='Res_ASG.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
-    # dat = Data(IM, csv_path='Res_ASG_Lin.csv', quantile_C=0.9, name_inte='rot')
-    dat = Data(IM, csv_path='Res_ASG_SA_PGA_RL_RNL.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
-    ref = Reference_curve(dat)
+    dat = Data(IM, csv_path='Res_ASG_Lin.csv', quantile_C=0.9, name_inte='rot')
+    # dat = Data(IM, csv_path='Res_ASG_SA_PGA_RL_RNL.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
+    ref = Reference_saved_MLE(dat, os.path.join(config.data_path, 'ref_MLE_ASG_{}'.format(IM)))
+    ref._compute_empirical_curves(25) #15 10^4, 25 10^5
     ref.plot_ref_fig()
 
     # from config import data_path

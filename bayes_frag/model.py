@@ -40,7 +40,7 @@ class Model() :
             self.ref = Reference_curve(data)
         else :
             self.ref = ref
-        self.logs = {'post':{}, 'MLE':{}}
+        self.logs = {'post':dict(), 'MLE':dict()}
         self.A, self.S = None, None
         if linear :
             opp_log_vraiss = lambda theta : -likelihood(data.Y.flatten(), data.A.flatten(), theta)
@@ -394,7 +394,7 @@ class Model() :
             for j in range(n) :
                 pp[i,j] = (self.likelihood(self.S, self.A, np.array([[th_array[i,0], th_array[j,1]]])) + self.log*const + self.prior(np.array([[th_array[i,0], th_array[j,1]]]))).flatten()
         if self.log :
-            ppe = np.exp(pp - pp.max())
+            ppe = np.exp(pp - pp.max()/2)
         else :
             ppe = pp*(const+1)
         if not ret_arrays :
@@ -504,12 +504,20 @@ class Model_math(Model) :
         return axes
 
 
-    
 
+class Model_pickle(Model) :
+    def __init__(self, prior, likelihood, data, model_file, log=True, numba=True, linear=False, ref=None, bounds_bst=None, option_bst=None, fragility_curve_func=probit_fargility_curve):
+        super().__init__(prior, likelihood, data, lambda x:x, log, numba, linear, ref, bounds_bst, option_bst, fragility_curve_func)
+        
+        self.A = model_file['A']
+        self.S = model_file['S']
+        self.logs = model_file['logs']
 
-
-            
-
+    def _update_data(self, k) :
+        if len(self.A.squeeze())>k :
+            pass
+        else :
+            super()._update_data(k)
     
         
 

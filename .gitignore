@@ -1,0 +1,7 @@
+$ cat /.gitignore
+*.pyc
+SURbin/*
+Runs_linear/*
+runs_SURbin/*
+__pycache__/*
+data/*

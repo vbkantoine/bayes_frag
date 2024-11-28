@@ -74,6 +74,18 @@ class Adaptative_Acquisition() :
         return A[:,np.newaxis], Y[:,np.newaxis]
         
 
+# class Adaptative_from_post(Adaptative_Acquisition) :
+#     def __init__(self, index_builder, data, refill=False, minimizer=minimize, starting_points=2):
+#         super().__init__(index_builder, data, refill, minimizer, starting_points) 
+    
+#     def sample(self, k):
+#         return super().sample(k)
+    
+#     def sample_from_init(self, k):
+#         return super().sample_from_init(k)
+
+
+
 
 class Model_AS(Model) :
     def __init__(self, AA, *args, **kwargs) :
@@ -127,6 +139,40 @@ class Model_AS_1run(Model_AS) :
 #     def __init__(self, curves_est, AA, *args, **kwargs) :
 #         super(Model_AS_pers_curve, self).__init__(AA, *args, **kwargs)
 #         self.curves_est = curves_est
+
+
+class Model_AS_1run_posterior(Model_AS_1run) :
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert type(self.adaptative.index_builder)==type(Index())
+        # index_class = self.adaptative.index_builder
+        # if index_class.likelihood is None :
+        #     index_class.likelihood = self.likelihood
+        #     index_class.log = self.log
+
+    def _update_data(self, k):
+        if len(self.logs['post'].keys())>0 :
+            n_last_post = self.logs['post'].keys()[-1]
+            self.adaptative.index_builder.n_data = n_last_post
+            self.adaptative.index_builder.posterior_sample = self.logs['post'][n_last_post]
+        return super()._update_data(k)
+
+
+class Index() :
+    def __init__(self, index_func_build, a_priori_points) : #, likelihood, log=False) :
+        self.index_func = index_func_build
+        # self.likelihood = likelihood
+        # self.prior = None
+        self.posterior_sample = a_priori_points
+        self.n_data = 0
+
+    def __call__(self, A, Y) :
+        # if self.n_data == 0 :
+        #     pass
+        return self.index_func(A[self.n_data:], Y[self.n_data:], self.posterior_sample)
+        
+
+
 
 
 
