@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random as rd
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.stats as stat
 
 from config import IM_dict, data_path, csv_path
 
@@ -134,7 +135,37 @@ class Data() :
         ax.set_ylabel(r'$f_A(a)$')
 
 
+class Data_toy(Data) :
+    def __init__(self, sigma_a, mu_a, alpha_star, beta_star, num_A=10**5) :
+        self.A = np.exp(mu_a + sigma_a*np.random.randn(num_A,1))
+        self.Y = np.exp(np.log(self.A) - np.log(alpha_star) + beta_star*np.random.randn(num_A,1)  )
+        self.C = 1
+        self.Z = 1*(self.Y>=self.C)
+        self.IM = None
+        self.sigma_a = sigma_a
+        self.mu_a = mu_a
+        self.alpha_star = alpha_star
+        self.beta_star = beta_star
+        a_curve_opt_threshold = self.get_curve_opt_threshold(0.95)
+        self.a_tab = None
+        self.h_a = None
+        self._set_a_tab(max_a=a_curve_opt_threshold)
+        self.f_A = None
+        self.f_A_tab = None
+        self._compute_f_A()
+        self.increasing_mode = True
 
+    def get_curve_opt_threshold(self, q) :
+        x = stat.norm.ppf(q)
+        return np.exp(self.beta_star*x + np.log(self.alpha_star))
+
+    # def draw(self, k) :
+    #     A = np.exp(self.mu_a + self.sigma_a*np.random.randn(k,1))
+    #     Z = 1* (np.random.rand(k,1) >= stat.norm.cdf((np.log(A)-np.log(self.alpha_star) )/self.beta_star ) )
+    #     if self.increasing_mode :
+    #         return self.increasing_draw(k)
+    #     else :
+    #         return self.draw(k)
 
 # def data_draw() : # a draw in the data
 #     return True
