@@ -20,9 +20,12 @@ def get_jeffreys_IM(IM) :
 
 class Approx_fisher() :
     """Compute approximation function of Fisher information matrix from saved computations"""
-    def __init__(self, fisher_file, save_fisher_arr) :
+    def __init__(self, fisher_file, save_fisher_arr, fisher_file_path_is_personalized=False) :
         self.fisher_file = fisher_file
-        file = open(os.path.join(data_path, self.fisher_file), 'rb')
+        if fisher_file_path_is_personalized :
+            file = open(self.fisher_file, 'rb')
+        else :
+            file = open(os.path.join(data_path, self.fisher_file), 'rb')
         self.I = pickle.load(file)
         file.close()
 

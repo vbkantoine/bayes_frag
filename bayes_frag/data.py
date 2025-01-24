@@ -6,6 +6,7 @@ import numpy.random as rd
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.stats as stat
+import scipy.special as spc
 
 from config import IM_dict, data_path, csv_path
 
@@ -138,7 +139,7 @@ class Data() :
 class Data_toy(Data) :
     def __init__(self, sigma_a, mu_a, alpha_star, beta_star, num_A=10**5) :
         self.A = np.exp(mu_a + sigma_a*np.random.randn(num_A,1))
-        self.Y = np.exp(np.log(self.A) - np.log(alpha_star) + beta_star*np.random.randn(num_A,1)  )
+        self.Y = np.exp(np.log(self.A) - np.log(alpha_star) + beta_star*np.random.randn(num_A,1)/np.sqrt(2)  )
         self.C = 1
         self.Z = 1*(self.Y>=self.C)
         self.IM = None
@@ -146,33 +147,58 @@ class Data_toy(Data) :
         self.mu_a = mu_a
         self.alpha_star = alpha_star
         self.beta_star = beta_star
-        a_curve_opt_threshold = self.get_curve_opt_threshold(0.95)
+        self.probit_curve = Probit_curve(alpha_star, beta_star)
+        a_curve_opt_threshold = self.get_curve_opt_threshold(1-5e-4)
         self.a_tab = None
         self.h_a = None
-        self._set_a_tab(max_a=a_curve_opt_threshold)
+        self._set_a_tab(max_a=a_curve_opt_threshold, num_a=400)
         self.f_A = None
         self.f_A_tab = None
         self._compute_f_A()
         self.increasing_mode = True
 
     def get_curve_opt_threshold(self, q) :
-        x = stat.norm.ppf(q)
-        return np.exp(self.beta_star*x + np.log(self.alpha_star))
+        # x = stat.norm.ppf(q)
+        # return np.exp(self.beta_star*x/np.sqrt(2) + np.log(self.alpha_star))
+        return self.probit_curve.get_curve_opt_threshold(q)
 
-    # def draw(self, k) :
-    #     A = np.exp(self.mu_a + self.sigma_a*np.random.randn(k,1))
-    #     Z = 1* (np.random.rand(k,1) >= stat.norm.cdf((np.log(A)-np.log(self.alpha_star) )/self.beta_star ) )
-    #     if self.increasing_mode :
-    #         return self.increasing_draw(k)
-    #     else :
-    #         return self.draw(k)
+    def plot_ref(self) :
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(self.a_tab, stat.norm.cdf((np.log(self.a_tab)-np.log(self.alpha_star) )/self.beta_star * np.sqrt(2) ))
+
+    def draw(self, k) :
+        A = np.exp(self.mu_a + self.sigma_a*np.random.randn(k,1))
+        Y = np.exp(np.log(A) - np.log(self.alpha_star) + self.beta_star*np.random.randn(k,1)/np.sqrt(2)  )
+        Z = 1*(self.Y>=self.C)
+        return A, Y, Z
+
+    def sampler_from_a(self, a:float):
+        Y = np.exp(np.log(a) - np.log(self.alpha_star) + self.beta_star*np.random.randn()/np.sqrt(2)  )
+        Z = 1*(self.Y>=self.C)
+        return Y, Z
+
+class Probit_curve() :
+    def __init__(self, alpha, beta) -> None:
+        self.alpha = alpha
+        self.beta = beta
+
+    def curve_func(self, a) :
+        return 1/2+1/2*spc.erf((np.log(a)-np.log(self.alpha))/self.beta)
+    
+    def __call__(self, a) :
+        return self.curve_func(a)
+
+    def get_curve_opt_threshold(self, q) :
+        x = stat.norm.ppf(q)
+        return np.exp(self.beta*x/np.sqrt(2) + np.log(self.alpha))
 
 # def data_draw() : # a draw in the data
 #     return True
 
 if __name__=="__main__":
     IM = 'PGA'
-    data = Data(IM)
+    data = Data_toy(1,0,3,0.3)
 
     plt.ion()
     plt.show()

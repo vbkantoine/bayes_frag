@@ -284,7 +284,7 @@ class Model() :
                 axes[j][1].plot(self.data.a_tab, curves_q1[key][i], label=r'{}'.format(k), color=colors_tab[i], alpha=alpha)
                 if i==len(kplot)-1 and ref:
                     axes[j][1].plot(self.data.a_tab, self.ref.curve_MLE, color='magenta', label=r'ref')
-                axes[j][1].set_xlabel(r'$a=$'+self.data.IM)
+                axes[j][1].set_xlabel(r'$a=$'+str(self.data.IM))
                 axes[j][1].set_ylabel(r'$P_f(a)$')
                 axes[j][1].set_title('Estimations from {}'.format(key))
                 axes[j][1].legend()

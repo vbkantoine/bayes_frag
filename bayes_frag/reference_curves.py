@@ -2,6 +2,7 @@
 # compute reference curves estimation from a full dataset
 import numpy as np
 from scipy.special import erf
+from scipy import stats as stat
 from scipy import optimize
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 from stat_functions import get_opp_log_vr_probit
+from bayes_frag.data import Probit_curve
 
 ##
 #
@@ -20,6 +22,7 @@ class Ref_main():
         self.curve_MC = None
         self.curve_MC_var = None
         self.a_tab_MC = None
+        self.probit_ref = None
         self._compute_empirical_curves()
 
     def _compute_empirical_curves(self, Nc=35) :
@@ -54,6 +57,7 @@ class Reference_curve(Ref_main) :
         if opp_log_vraiss is None :
             opp_log_vraiss = get_opp_log_vr_probit(self.data.Z, self.data.A)
         self.theta_MLE = optimize.minimize(opp_log_vraiss, np.array([3,0.3]), options={'maxiter':50}).x
+        self.probit_ref = Probit_curve(self.theta_MLE[0], self.theta_MLE[1])
         return self.theta_MLE
 
     def _compute_MLE_curve(self) :
@@ -121,6 +125,35 @@ class Reference_saved_MLE(Reference_curve) :
 
     def _compute_MLE(self):
         self.theta_MLE = pickle.load(open(self.path_MLE, 'rb'))
+        self.probit_ref = Probit_curve(self.theta_MLE[0], self.theta_MLE[1])
+
+
+class Reference_known_MLE(Reference_curve) :
+    def __init__(self, data, theta_MLE):
+        """
+        Args:
+            data (Data): data
+            theta_MLE (array (2)): MLE theta reference for Data
+        """
+        super().__init__(data)
+        self.theta_MLE = theta_MLE
+        self.probit_ref = Probit_curve(theta_MLE[0], theta_MLE[1])
+        self._compute_MLE_curve()
+
+    def _compute_MLE(self):
+        pass
+
+    def _compute_MLE_curve(self):
+        if self.theta_MLE is None :
+            pass
+        else :
+            return super()._compute_MLE_curve()
+
+
+
+# def get_curve_opt_threshold(alpha, beta, q) :
+#         x = stat.norm.ppf(q)
+#         return np.exp(beta*x/np.sqrt(2) + np.log(alpha))
 
 
 
@@ -130,18 +163,19 @@ if __name__=="__main__":
     import config
     plt.ion()
     plt.show()
-    IM = 'PGA'
+    IM = 'sa_5hz'
     # dat = Data(IM)
     # dat = Data('PGA', csv_path='Res_ASG.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
-    dat = Data(IM, csv_path='Res_ASG_Lin.csv', quantile_C=0.9, name_inte='rot')
-    # dat = Data(IM, csv_path='Res_ASG_SA_PGA_RL_RNL.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
-    ref = Reference_saved_MLE(dat, os.path.join(config.data_path, 'ref_MLE_ASG_{}'.format(IM)))
-    ref._compute_empirical_curves(25) #15 10^4, 25 10^5
+    # dat = Data(IM, csv_path='Res_ASG_Lin.csv', quantile_C=0.9, name_inte='rot')
+    dat = Data(IM, csv_path='Res_ASG_SA_PGA_RL_RNL_80000.csv', quantile_C=0.9, name_inte='rot_nlin', shuffle=True)
+    # ref = Reference_saved_MLE(dat, os.path.join(config.data_path, 'ref_MLE_ASG_{}'.format(IM)))
+    ref = Reference_curve(dat)
+    ref._compute_empirical_curves(20) #15 10^4, 25 10^5
     ref.plot_ref_fig()
 
-    # from config import data_path
-    # import os
-    # pickle.dump(ref.theta_MLE, open(os.path.join(data_path, 'ref_MLE_ASG_lin_{}'.format(IM)), 'wb'))
+    from config import data_path
+    import os
+    pickle.dump(ref.theta_MLE, open(os.path.join(data_path, 'ref_MLE_ASG_80000_{}'.format(IM)), 'wb'))
 
 
 

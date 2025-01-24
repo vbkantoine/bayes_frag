@@ -42,15 +42,18 @@ class Adaptative_Acquisition() :
             self.logs['I'].append(index)
             ne_a = self.minimizer(lambda a:-index(a), 2).x #, bounds=((self.data.a_tab[0], self.data.a_tab[-1]))).x
             # minimize()
-            next_id = np.argmin(np.abs(ne_a-self.updatedA))
-            A[p], Y[p] = self.data.A[next_id], self.data.Y[next_id]
+            A[p], Y[p] = self.select_data(ne_a)
             p += 1
-            if self.refill :
-                self.updatedA[next_id] = -10**5
         self.logs['A'] = A+0
         self.logs['Y'] = Y+0
         print(self.logs)
         return A[:,np.newaxis], Y[:,np.newaxis]
+    
+    def select_data(self, ne_a) :
+        next_id = np.argmin(np.abs(ne_a-self.updatedA))
+        if self.refill :
+            self.updatedA[next_id] = -10**5
+        return self.data.A[next_id], self.data.Y[next_id]
 
     def sample_from_init(self, k) :
         A = np.zeros(k)
@@ -64,15 +67,22 @@ class Adaptative_Acquisition() :
             self.logs['I'].append(index)
             ne_a = self.minimizer(lambda a:-index(a), 2).x #, bounds=((self.data.a_tab[0], self.data.a_tab[-1]))).x
             # minimize()
-            next_id = np.argmin(np.abs(ne_a-self.updatedA))
-            A[p], Y[p] = self.data.A[next_id], self.data.Y[next_id]
+            A[p], Y[p] = self.select_data(ne_a)
             p += 1
-            if self.refill :
-                self.updatedA[next_id] = -10**5
         self.logs['A'] = A+0
         self.logs['Y'] = Y+0
         return A[:,np.newaxis], Y[:,np.newaxis]
         
+
+class Adapative_with_sampler(Adaptative_Acquisition) :
+    def __init__(self, index_builder, data, minimizer=minimize, starting_points=2):
+        """refill must be true
+        data must have sampling methods"""
+        super().__init__(index_builder, data, True, minimizer, starting_points)
+
+    def select_data(self, ne_a):
+        Y,_ = self.data.sampler_from_a(ne_a)
+        return ne_a, Y
 
 # class Adaptative_from_post(Adaptative_Acquisition) :
 #     def __init__(self, index_builder, data, refill=False, minimizer=minimize, starting_points=2):
