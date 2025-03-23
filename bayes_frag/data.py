@@ -185,7 +185,7 @@ class Probit_curve() :
 
     def curve_func(self, a) :
         return 1/2+1/2*spc.erf((np.log(a)-np.log(self.alpha))/self.beta)
-    
+
     def __call__(self, a) :
         return self.curve_func(a)
 
