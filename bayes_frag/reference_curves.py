@@ -26,6 +26,8 @@ class Ref_main():
         self._compute_empirical_curves()
 
     def _compute_empirical_curves(self, Nc=35) :
+        if len(self.data.A.squeeze())< Nc :
+            Nc = len(self.data.A.squeeze())
         kmeans_IM = KMeans(n_clusters=Nc).fit(self.data.A)
         a_m_tab = kmeans_IM.cluster_centers_.flatten()
         pMC = np.zeros_like(a_m_tab)
