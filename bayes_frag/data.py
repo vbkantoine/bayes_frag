@@ -135,6 +135,10 @@ class Data() :
         ax.set_xlabel(r'$a$={}'.format(self.IM))
         ax.set_ylabel(r'$f_A(a)$')
 
+    def is_draw_degenerate(self, k):
+        A,Y,Z = self.increasing_draw(k)
+        return is_degenerate(A,Z)
+
 
 class Data_toy(Data) :
     def __init__(self, sigma_a, mu_a, alpha_star, beta_star, num_A=10**5) :
@@ -177,6 +181,9 @@ class Data_toy(Data) :
         Y = np.exp(np.log(a) - np.log(self.alpha_star) + self.beta_star*np.random.randn()/np.sqrt(2)  )
         Z = 1*(self.Y>=self.C)
         return Y, Z
+    
+    
+
 
 class Probit_curve() :
     def __init__(self, alpha, beta) -> None:
@@ -195,6 +202,13 @@ class Probit_curve() :
 
 # def data_draw() : # a draw in the data
 #     return True
+
+def is_degenerate(A, Z) :
+    if np.all(Z==1) or np.all(Z==0) :
+        return True
+    elif np.max(A[Z.squeeze()==0])<np.min(A[Z.squeeze()==1]) :
+        return True
+    return False
 
 if __name__=="__main__":
     IM = 'PGA'
